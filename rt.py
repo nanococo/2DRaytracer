@@ -30,18 +30,3 @@ def normalize(v1):
     #assumes v1 starts at (0,0)
     v1 = v1 / length(v1)
     return v1
-
-def intersectionPoint(ori, dir, dist):
-    x = ori.x + dir.x*dist
-    y = ori.y + dir.y*dist
-
-    return Point(x,y)
-
-def cosAngle(a, b, ori):
-    #returns the cosine of the angle of 2 vectors that part from ori
-
-    v1 = ori - a
-    v2 = ori - b
-
-    cos = v1.dot(v2)/(length(v1)*length(v2))
-    return cos
