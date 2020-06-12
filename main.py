@@ -1,25 +1,43 @@
-import numpy as np 
+from ICONSTANTS import IConstants
+import numpy as np
 import pygame
 import random
+from random import choices
 from PIL import Image
+from numpy.ma import arange
+from itertools import chain
 from Point import *
 import rt
 import math
 import threading
+
  
 
 def raytrace():
     #Raytraces the scene progessively
+
+    lightRange = IConstants.INITIAL_LIGHT_RANGE
+    lightRangeCounter = 0
+    sourceAreasList = setSourceAreasList(lightRange)
+    nonSourceProbability = IConstants.NON_SOURCE_PROBABILITY
+
     while True:
+
         #random point in the image
-        point = Point(random.uniform(0, 500), random.uniform(0, 500))
+        point = directedRandomPoint(lightRange, sourceAreasList)
+
+        #point = Point(random.uniform(0,500), random.uniform(0,500))
+
         #pixel color
         pixel = 0
 
         for source in sources:
+
             #calculates direction to light source
-            
+
             dir = source-point
+            if dir.x == 0 and dir.y == 0:
+                continue
             #add jitter
             #dir.x += random.uniform(0, 25)
             #dir.y += random.uniform(0, 25)
@@ -51,7 +69,67 @@ def raytrace():
             
             #average pixel value and assign
             px[int(point.x)][int(point.y)] = pixel // len(sources)
-        
+
+        lightRangeCounter += 1
+        if lightRangeCounter % 10 ** 5 == 0:
+            lightRange += 50
+            sourceAreasList = setSourceAreasList(lightRange)
+            nonSourceProbability += 20
+
+
+
+
+
+
+# returns a point elected with a directed random.
+def directedRandomPoint(lightRange, sourceAreasList):
+
+    # Chooses between full random or random between source ranges
+    segmentChoice = random.uniform(0, 100)
+
+    if segmentChoice < IConstants.NON_SOURCE_PROBABILITY:
+        # Selects a full random
+        x = random.choice(arange(0, IConstants.IMAGE_WIDTH))
+        y = random.choice(arange(0, IConstants.IMAGE_HEIGHT))
+        return Point(x, y)
+    else:
+        # Selects a random index choice between the lists of source ranges
+        sourceRangeChoice = random.choice(arange(0, len(sourceAreasList)))
+        # Selects a random X and Y in the chosen source range
+        x = random.choice(sourceAreasList[sourceRangeChoice][0])
+        y = random.choice(sourceAreasList[sourceRangeChoice][1])
+
+        return Point(x, y)
+
+
+# returns a list with the format: [[[sourceXRange], [sourceYRange]], [[sourceXRange], [sourceYRange]], ... ]
+def setSourceAreasList(lightRange):
+
+    sourceAreasList = []
+    # Each index is a source range divided by two other lists that represent the options on X and the options of Y
+
+    for source in sources:
+
+        sourceRangeX = list(setSourceRange(source.x, lightRange, IConstants.IMAGE_WIDTH))
+        sourceRangeY = list(setSourceRange(source.y, lightRange, IConstants.IMAGE_HEIGHT))
+        sourceRange = [sourceRangeX, sourceRangeY]
+        sourceAreasList += [sourceRange]
+
+    return sourceAreasList
+
+
+# Sets the random source range, to prevent it from going out of index in expansion.
+def setSourceRange(sourcePositionValue, lightRange, upperLimit):
+    # sourcePositionValue is source.x or source.y
+    # upperLimit is the Image Height or Width
+    rangeBegin = sourcePositionValue - lightRange
+    rangeEnd = sourcePositionValue + lightRange
+    if rangeBegin < 0:
+        rangeBegin = 0
+    if rangeEnd > upperLimit:
+        rangeEnd = upperLimit
+    return range(rangeBegin, rangeEnd)
+
 
 
 def getFrame():
@@ -74,7 +152,7 @@ clock = pygame.time.Clock()
 random.seed()
 
 #image setup
-i = Image.new("RGB", (500, 500), (0, 0, 0) )
+i = Image.new("RGB", (500, 500), (0, 0, 0))
 px = np.array(i)
 
 #reference image for background color
@@ -90,7 +168,7 @@ light = np.array([1, 1, 0.75])
 
 #warning, point order affects intersection test!!
 segments = [
-            ([Point(180, 135), Point(215, 135)]), 
+            ([Point(180, 135), Point(215, 135)]),
             ([Point(285, 135), Point(320, 135)]),
             ([Point(320, 135), Point(320, 280)]),
             ([Point(320, 320), Point(320, 355)]),
@@ -100,6 +178,7 @@ segments = [
             ([Point(320, 320), Point(360, 320)]),
             ([Point(180, 250), Point(180, 135)]),
             ]
+
 
 
 #thread setup
@@ -124,7 +203,7 @@ while not done:
         screen.blit(surface, (border, border))
 
         pygame.display.flip()
-        clock.tick(60)
+        #clock.tick(60)
 
 
 
