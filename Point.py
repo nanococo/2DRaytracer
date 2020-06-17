@@ -23,4 +23,4 @@ class Point:
         return (self.x*p2.y) - (self.y*p2.x)
 
     def __str__(self):
-        return "[ {}, {}]".format(self.x, self.y) 
+        return "[ {}, {}]".format(self.x, self.y)

@@ -1,0 +1,1 @@
+print(min(list(range(0, 10))))
