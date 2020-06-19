@@ -10,16 +10,16 @@ def raySegmentIntersect(ori, dir, p1, p2):
 
     
     dot = v2.dot(v3)
-    if (abs(dot) < 0.000001):
-        return -1.0
+    if abs(dot) < 0.000001:
+        return -1.0, -1.0
 
     t1 = v2.cross(v1) / dot
     t2 = v1.dot(v3) / dot
 
-    if (t1 >= 0.0 and (t2 >= 0.0 and t2 <= 1.0)):
-        return t1
+    if t1 >= 0.0 and (t2 >= 0.0 and t2 <= 1.0):
+        return t1, t2
 
-    return -1.0
+    return -1.0, -1.0
 
 def length(v1):
     #assumes v1 starts at (0,0)

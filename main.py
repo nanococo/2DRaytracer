@@ -1,30 +1,44 @@
-from ICONSTANTS import IConstants
-import numpy as np
-import pygame
 import random
-from random import choices
-from PIL import Image
-from numpy.ma import arange
-from itertools import chain
-from Source import Source
-from ImageManager import ImageManager
-from Point import *
-import rt
-import math
 import threading
 import time
 
+import numpy as np
+import pygame
+from numpy.ma import arange
+
+import rt
+from ICONSTANTS import IConstants
+from ImageManager import ImageManager
+from Point import *
+from Source import Source
+import math
+
 imageManager = ImageManager("fondo.png")
 sources = [
-           Source(Point(195, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
+           #Source(Point(195, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
            Source(Point(294, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
            #Source(Point(94, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
            #Source(Point(394, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth)
           ]
 
 
+
+def rotate(origin, point, angle):
+    """
+    Rotate a point counterclockwise by a given angle around a given origin.
+
+    The angle should be given in radians.
+    """
+    ox, oy = origin
+    px, py = point
+
+    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
+    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
+    return qx, qy
+
+
 def raytrace():
-    # Raytraces the scene progessively
+    # Raytraces the scene progressively
 
     timerStart = time.time()
     sourceAreasIndex = 0
@@ -34,6 +48,7 @@ def raytrace():
 
         # random point in the image
         point = directedRandomPoint(sourceAreasIndex, nonSourceProbability, sources)
+        lightsOnPoint = 1
         # point = Point(random.uniform(0,500), random.uniform(0,500))
 
         # pixel color
@@ -46,7 +61,6 @@ def raytrace():
             dir = source.point - point
             if dir.x == 0 and dir.y == 0:
                 continue
-            # add jitter
 
             # distance between point and light source
             length = rt.length(dir)
@@ -54,21 +68,85 @@ def raytrace():
             # normalized distance to source
             length2 = rt.length(rt.normalize(dir))
 
+            #---------------------------------------DIRECT LIGHTING--------------------------------------------
             free = True
-            for seg in segments:  # Este es el ciclo que cambia con la iluminación global
+            for seg in segments:
+
                 # check if ray intersects with segment
                 dist = rt.raySegmentIntersect(point, dir, seg[0], seg[1])
                 # if intersection, or if intersection is closer than light source
-                if 0 < dist < length2:
+                if 0 < dist[0] < length2:
                     free = False
                     break
 
             if free:
                 # call imageManager method for color calculation
                 pixel += imageManager.calculatePixelColor(length, point, source, light)
+                lightsOnPoint+=1
+
+            # -------------------------------------INDIRECT LIGHTING--------------------------------------------
+            # (GLOBAL ILLUMINATION PROCESS HERE)
+
+            #FIRST: Add a vector to every 45 degrees from reference point
+                #USES:  Base light ray vector BASE_VECTOR_LENGTH. Rotates from this
+                #       Origin set by reference point
+
+            raysFromPoint = [] # <- Array of vectors (Points) that define directions and range for light rays. Origin is the point
+            origin = (point.x, point.y) #Since point is of type Point, convert its values to a single tuple
+            angle = 0 #Initial value of 45. Increments by 45 each loop
+            for i in range(8):
+                rotatedTuple = rotate(origin, (IConstants.BASE_VECTOR_RAY.x, IConstants.BASE_VECTOR_RAY.y), math.radians(angle)) #Returns a rotated vector by n-degree as tuple
+                raysFromPoint.append(Point(rotatedTuple[0], rotatedTuple[1])) #Created new Point from rotated vector-tuple
+                angle+=45
+
+            #SECOND: Iterate each ray to see if it intersects with a segment. Might intersect with multiple segments since
+            #        it goes in 360 degrees each 45th degree (Star like pattern)
+            #       Each ray will be iterated with all segments present
+
+            for ray in raysFromPoint: #Each ray is a vector represented by a Point
+                for seg in segments:
+
+                    A = seg[0] #Segment point A
+                    B = seg[1] #Segment point B
+                    dist = rt.raySegmentIntersect(point, ray, seg[0], seg[1])
+
+                    if 0 < dist[0] < IConstants.BASE_VECTOR_RAY_LENGTH_NORMALIZED:
+                        #(THIS MEANS BOUNCE SINCE IT INTERSECTS!!!)
+
+                        # THIRD: Calculate intersection point with segment.
+                        P = A + Point((B - A).x * dist[1], (B - A).y * dist[1]) # <- Return a Point type value
+                        firstRayVector = P - point #Defines a vector between the point and the intersection point P
+                        firstLength = rt.length(firstRayVector) #Length of such vector
+
+                        #FOURTH: Calculate direct lighting from new point to source value. If no other
+                        #        Intersection is found, the is a valid indirect lighting
+
+                        #--------------------------------SECOND DIRECT LIGHTING -------------------------------
+                        dir2 = source.point - P #Direction vector between source and new Point P
+
+                        secondLength = rt.length(dir2) #distance between Point P and light source
+                        secondLength2 = rt.length(rt.normalize(dir2)) # normalized distance to source
+
+                        free2 = True
+                        for seg2 in segments:
+
+                            # check if ray intersects with segment
+                            dist2 = rt.raySegmentIntersect(P, dir2, seg2[0], seg2[1])
+                            # if intersection, or if intersection is closer than light source
+                            if 0 < dist2[0] < secondLength2:
+                                free2 = False
+                                break
+
+                        if free2:
+                            # call imageManager method for color calculation
+                            pixel += imageManager.calculatePixelColor(firstLength+secondLength, point, source, light)
+                            lightsOnPoint += 1
+
+                        break
+
 
             # average pixel value and assign
-            imageManager.setPixelColor(point, sources, pixel)
+            imageManager.setPixelColor(point, sources, pixel, lightsOnPoint)
 
         timerEnd = time.time()
         if (timerEnd - timerStart) > IConstants.SECONDS_BEFORE_CHANGE:

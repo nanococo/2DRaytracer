@@ -11,6 +11,3 @@ class Geometry:
     @abstractmethod
     def calculateReflection(self):
         pass
-
-
-

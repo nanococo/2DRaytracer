@@ -29,5 +29,5 @@ class ImageManager:
 
         return values
 
-    def setPixelColor(self, pPoint, pSources, pColor):
-        self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // len(pSources)
+    def setPixelColor(self, pPoint, pSources, pColor, lightsOnPoints):
+        self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // lightsOnPoints

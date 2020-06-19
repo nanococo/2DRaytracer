@@ -1,18 +1,16 @@
-from ICONSTANTS import IConstants
-import numpy as np
-import pygame
 import random
-from random import choices
-from PIL import Image
-from numpy.ma import arange
-from itertools import chain
-from Source import Source
-from ImageManager import ImageManager
-from Point import *
-import rt
-import math
 import threading
 import time
+
+import numpy as np
+import pygame
+from numpy.ma import arange
+
+import rt
+from ICONSTANTS import IConstants
+from ImageManager import ImageManager
+from Point import *
+from Source import Source
 
 imageManager = ImageManager("fondo.png")
 sources = [
