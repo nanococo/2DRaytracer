@@ -42,7 +42,7 @@ class SpecularSegment(Segment):
 
             #print(math.degrees(angleFromLight))
 
-            if abs(math.degrees(angleFromLight)) < 90:
+            if abs(math.degrees(angleFromLight)) < 90 and (math.degrees(angleFromLight)*math.degrees(angle) <= 0):
                 #print(True)
                 return True
 

@@ -30,13 +30,13 @@ def getDyDx(pA, pB):
 
 
 #light = Point(14,5)
-light = Point(11,7)
+light = Point(6,5)
 
 a = Point(11,8)
 b = Point(5.2844650363276, 5.7185842823965)
 
-originPoint = Point(9, 10)
-lightRay = Point(-1, -5) #Light vector also direction
+originPoint = Point(7,4)
+lightRay = Point(2,6) #Light vector also direction
 
 
 
@@ -51,7 +51,7 @@ P = a + Point((b - a).x * dist[1], (b - a).y * dist[1])
 
 dirFromIntersectionToPoint = originPoint - P #This is a vector that goes from origin to intersection point in segment
 
-print(P)
+print("Intersection point: " + P.__str__())
 
 dYdX = getDyDx(a, b)
 normal = Point(-dYdX.y,dYdX.x) #First normal vector
@@ -60,7 +60,8 @@ dot = normal.dot(dirFromIntersectionToPoint)
 det = normal.cross(dirFromIntersectionToPoint)
 angle = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
 
-
+print("First normal: "+normal.__str__())
+print(math.degrees(angle))
 
 if math.degrees(angle) > 90:
     # wrong angle. recalculate for second normal
@@ -69,6 +70,7 @@ if math.degrees(angle) > 90:
     det = normal.cross(dirFromIntersectionToPoint)
     angle = math.atan2(det, dot)
 
+    print("Second normal: "+normal.__str__())
     print(math.degrees(angle))
     print(abs(math.degrees(angle)))
 
@@ -81,7 +83,7 @@ if 7 < abs(math.degrees(angle)) < 60:
 
     print(math.degrees(angleFromLight))
 
-    if abs(math.degrees(angleFromLight)) < 90:
+    if abs(math.degrees(angleFromLight)) < 90 and (math.degrees(angleFromLight)*math.degrees(angle) <= 0):
         print(True)
 
     else:
