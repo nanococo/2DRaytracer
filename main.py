@@ -56,9 +56,9 @@ def raytrace():
         rays = []
 
         for i in range(0, 8):
-            pointAtEndOfRay = Point(point.x + IConstants.BASE_VECTOR_RAY, point.y)
-            rotatedPoint = rotate(point, pointAtEndOfRay, math.radians(-45))
-            rays.append(rotatedPoint-point)
+            pointAtEndOfRay = Point(point.x + IConstants.BASE_VECTOR_RAY.x, point.y)
+            rotatedPoint = rotate((point.x, point.y), (pointAtEndOfRay.x, pointAtEndOfRay.y), math.radians(-45))
+            rays.append(Point(rotatedPoint[0], rotatedPoint[1])-point)
 
 
         for source in sources:
@@ -89,7 +89,7 @@ def raytrace():
                         P = seg.a + Point((seg.b - seg.a).x * dist[1], (seg.b - seg.a).y * dist[1])
                         free = False
 
-                        if seg.ReflectionConditions(point, ray, source, P):
+                        if seg.ReflectionConditions(point, ray, source.point, P):
                             #INTERSECTION TO POINT
                             pass
 

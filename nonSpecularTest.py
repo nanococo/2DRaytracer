@@ -44,7 +44,7 @@ def raytrace():
         except IndexError:
             totalTimeStop = time.time() - totalTime
             print(totalTimeStop)
-            point = Point(0,0)
+            point = Point(0, 0)
 
         lightsOnPoint = 0
         #point = Point(random.uniform(0, imageManager.imageWidth),
@@ -54,42 +54,8 @@ def raytrace():
         pixel = 0
 
         rays = initRays(point, sources)
-
-        for source in sources:
-
-            for ray in rays:
-
-                if ray.x == 0 and ray.y == 0:
-                    continue
-
-                # distance between point and light source
-                length = rt.length(ray)
-
-                # normalized distance to source
-                length2 = rt.length(rt.normalize(ray))
-
-                free = True
-                for seg in segments:
-
-                    # check if ray intersects with segment
-                    dist = rt.raySegmentIntersect(point, ray, seg.a, seg.b)
-                    # if intersection, or if intersection is closer than light source
-                    if 0 < dist[0] < length2:
-                        #Direct ray had intersection
-                        P = seg.a + Point((seg.b - seg.a).x * dist[1], (seg.b - seg.a).y * dist[1])
-                        free = False
-
-                        if seg.ReflectionConditions(point, ray, source, P):
-                            #INTERSECTION TO POINT
-                            pass
-
-                        break
-
-                if free:
-                    # call imageManager method for color calculation
-                    pixel += imageManager.calculatePixelColor(length, point, source)
-                    lightsOnPoint += 1
-
+        for ray in rays:
+            pixel += directLight(point, ray) # Pending calculation on lights on point
 
         # average pixel value and assign
         imageManager.setPixelColor(point, pixel, lightsOnPoint)
@@ -111,10 +77,13 @@ def initRays(point, sources):
         rays.append(rotatedPoint - point)
     for source in sources:
         dir = source.point - point
+        dir.isLightAtEnd = True
+        dir.lightIndex = sources.index(source)
         rays.append(dir)
     return rays
 
-def directLight(point, ray, sources, segment):
+def directLight(point, ray):
+
     """
     if choca(ray, segment):
         calcIntersectionPoint()
@@ -124,8 +93,38 @@ def directLight(point, ray, sources, segment):
     else:
         imageManager.calculatePixelColor(length, point, source)
     """
+    #for source in sources:
+    if ray.x == 0 and ray.y == 0:
+        return
+    # distance between point and light source
+    length = rt.length(ray)
+    # normalized distance to source
+    length2 = rt.length(rt.normalize(ray))
+    free = True
+    for segment in segments:
+        # check if ray intersects with segment
+        dist = rt.raySegmentIntersect(point, ray, segment.a, segment.b)
+        # if intersection, or if intersection is closer than light source
+        if 0 < dist[0] < length2:
+            # Direct ray had intersection
+            P = segment.a + Point((segment.b - segment.a).x * dist[1], (segment.b - segment.a).y * dist[1])
+            indirectLighting = rebound(point, ray, P, segment)
+            if not isinstance(indirectLighting, int):
+                return indirectLighting
+            free = False
 
-def rebound(source, originPoint, newPoint, segment):
+    if free and ray.isLightAtEnd:
+        return imageManager.calculatePixelColor(length, point, sources[ray.lightIndex])
+
+
+def rebound(originPoint, ray, intersectionPoint, segment):
+    """
+    :param originPoint:
+    :param newPoint:
+    :param segment:
+    :return: an imageManager.calculatePixelColor if indirect light is reached, 0 otherwise
+    """
+
     """
     ray = calcula nuevo rayo
     for seg in segments:
@@ -133,6 +132,46 @@ def rebound(source, originPoint, newPoint, segment):
             colorBleeding = calculateColorBleeding(source, segmentColor, newPoint) : returns a Source.
             imageManager.calculatePixelColor(length between new point and origin point, originPoint, colorBleeding)
     """
+    pixel = 0
+    for source in sources:
+        if segment.ReflectionConditions(originPoint, ray, source, intersectionPoint):  # if vectorial conditions are met
+            direction = source.point - intersectionPoint
+            length = rt.length(direction)
+            length2 = rt.length(rt.normalize(direction))
+            free = True
+            for seg in segments:
+                if seg == segment:
+                    continue
+                distance = rt.raySegmentIntersect(intersectionPoint, direction, seg.a, seg.b)
+                if 0 < distance[0] < length2:
+                    free = False
+
+            if free:
+                colorBleeding = calculateColorBleeding(source, segment.Color, intersectionPoint)
+                pixel += imageManager.calculatePixelColor(length, originPoint, colorBleeding)
+
+    return pixel
+
+
+
+def calculateColorBleeding(pSource, pSegmentColor, pIntersectionPoint):
+    ...
+
+
+
+def intersected(point, intersectionPoint, direction, segment):
+    """
+    :param point:
+    :param direction:
+    :param segment:
+    :return: boolean value. True = intersected, False = not intersected
+    """
+
+
+
+
+
+
 
 # returns a point elected with a directed random.
 def directedRandomPoint(sourceAreasIndex, nonSourceProbability, sourcesList):
