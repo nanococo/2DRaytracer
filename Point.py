@@ -14,7 +14,11 @@ class Point:
         return Point(self.x-other.x, self.y-other.y)   
 
     def __truediv__(self, other):
-        return Point(self.x/other, self.y/other) 
+        return Point(self.x/other, self.y/other)
+
+    def __mul__(self, other):
+        #Mul from a scalar value
+        return Point(self.x*other, self.y*other)
 
     def dot(self, p2):
         return (self.x*p2.x) + (self.y*p2.y)
