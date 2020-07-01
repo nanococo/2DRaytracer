@@ -2,16 +2,18 @@ import numpy as np
 
 from ICONSTANTS import IConstants
 
-
 class Source:
 
-    def __init__(self, pPoint, pColor, pImageHeight, pImageWidth):
+    def __init__(self, pPoint, pColor, pImageHeight, pImageWidth, pIntensity):
 
         self.light = np.array(pColor)
         self.point = pPoint
-        self.rangeAreas = []  # [ [[rangoX],[rangoY]], [[rangoX],[rangoY]], [[rangoX],[rangoY]], [[rangoX],[rangoY]]
+        self.rangeAreas = []
         self.setRangeAreasList(pImageHeight, pImageWidth)
         self.rangeQuantity = len(self.rangeAreas)
+        self.intensity = pIntensity
+
+
 
     # Sets rangeAreas attribute.
     def setRangeAreasList(self, pImageHeight, pImageWidth):
@@ -28,6 +30,8 @@ class Source:
             self.rangeAreas += [sourceArea]
 
             sourceRange += IConstants.LIGHT_RANGE_EXPANSION_RATE
+
+
 
     # Sets the random source range, to prevent it from going out of index in expansion.
     def setSourceRange(self, sourcePositionValue, pSourceRange, pUpperLimit):
