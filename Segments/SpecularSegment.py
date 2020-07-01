@@ -5,16 +5,16 @@ from Segments.Segment import Segment
 from VectorialMath.Vectors import getDyDx
 
 
-class NonSpecularSegment(Segment):
+class SpecularSegment(Segment):
 
     def ReflectionConditions(self, origin, lightRay, light, P):
-        #dist = rt.raySegmentIntersect(origin, lightRay, self.a, self.b)  # returns t1 and t2 as tuple
+        # dist = rt.raySegmentIntersect(origin, lightRay, self.a, self.b)  # returns t1 and t2 as tuple
 
-        #P = self.a + Point((self.b - self.a).x * dist[1], (self.b - self.a).y * dist[1])
+        # P = self.a + Point((self.b - self.a).x * dist[1], (self.b - self.a).y * dist[1])
 
         dirFromIntersectionToPoint = origin - P  # This is a vector that goes from origin to intersection point in segment
 
-        #print(P)
+        print(P)
 
         dYdX = getDyDx(self.a, self.b)
         normal = Point(-dYdX.y, dYdX.x)  # First normal vector
@@ -33,18 +33,27 @@ class NonSpecularSegment(Segment):
             #print(math.degrees(angle))
             #print(abs(math.degrees(angle)))
 
+        if 7 < abs(math.degrees(angle)) < 60:
 
-        lineFromLightToIntersectionPoint = light - P
-        dot = normal.dot(lineFromLightToIntersectionPoint)
-        det = normal.cross(lineFromLightToIntersectionPoint)
-        angleFromLight = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+            lineFromLightToIntersectionPoint = light - P
+            dot = normal.dot(lineFromLightToIntersectionPoint)
+            det = normal.cross(lineFromLightToIntersectionPoint)
+            angleFromLight = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
 
-        #print(math.degrees(angleFromLight))
+            #print(math.degrees(angleFromLight))
 
-        if abs(math.degrees(angleFromLight)) < 90:
-            #print(True)
-            return True
+            if abs(math.degrees(angleFromLight)) < 90:
+                #print(True)
+                return True
+
+            else:
+                #print(False)
+                return False
 
         else:
             #print(False)
             return False
+
+
+
+sp = SpecularSegment((1,1,1), Point(11,8), Point(5.2844650363276, 5.7185842823965))

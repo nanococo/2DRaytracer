@@ -30,7 +30,7 @@ def getDyDx(pA, pB):
 
 
 #light = Point(14,5)
-light = Point(11,9)
+light = Point(11,7)
 
 a = Point(11,8)
 b = Point(5.2844650363276, 5.7185842823965)
@@ -72,21 +72,21 @@ if math.degrees(angle) > 90:
     print(math.degrees(angle))
     print(abs(math.degrees(angle)))
 
-#if 7 < abs(math.degrees(angle)) < 60:
+if 7 < abs(math.degrees(angle)) < 60:
 
-lineFromLightToIntersectionPoint = light - P
-dot = normal.dot(lineFromLightToIntersectionPoint)
-det = normal.cross(lineFromLightToIntersectionPoint)
-angleFromLight = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
+    lineFromLightToIntersectionPoint = light - P
+    dot = normal.dot(lineFromLightToIntersectionPoint)
+    det = normal.cross(lineFromLightToIntersectionPoint)
+    angleFromLight = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
 
-print(math.degrees(angleFromLight))
+    print(math.degrees(angleFromLight))
 
-if abs(math.degrees(angleFromLight)) < 90:
-    print(True)
+    if abs(math.degrees(angleFromLight)) < 90:
+        print(True)
+
+    else:
+        print(False)
+
 
 else:
     print(False)
-
-
-# else:
-#     print(False)
