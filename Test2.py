@@ -40,9 +40,6 @@ lightRay = Point(-1, -5) #Light vector also direction
 
 
 
-
-
-
 #----------------------------------------------------------------------------------------------------------------------------
 
 dist = rt.raySegmentIntersect(originPoint, lightRay, a, b) #returns t1 and t2 as tuple
@@ -51,7 +48,9 @@ P = a + Point((b - a).x * dist[1], (b - a).y * dist[1])
 
 dirFromIntersectionToPoint = originPoint - P #This is a vector that goes from origin to intersection point in segment
 
+
 print(P)
+print(dirFromIntersectionToPoint)
 
 dYdX = getDyDx(a, b)
 normal = Point(-dYdX.y,dYdX.x) #First normal vector

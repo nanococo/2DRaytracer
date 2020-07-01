@@ -1,3 +1,4 @@
+import math
 import random
 import threading
 import time
@@ -10,9 +11,9 @@ import rt
 from ICONSTANTS import IConstants
 from ImageManager import ImageManager
 from Point import *
-from Segment import Segment
+from Segments.NonSpecularSegment import NonSpecularSegment
 from Source import Source
-import math
+from VectorialMath.Vectors import rotate
 
 imageManager = ImageManager("fondoB.png")
 sources = [
@@ -23,21 +24,6 @@ sources = [
            Source(Point(417, 88), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
            Source(Point(483, 145), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
           ]
-
-
-
-def rotate(origin, point, angle):
-    """
-    Rotate a point counterclockwise by a given angle around a given origin.
-
-    The angle should be given in radians.
-    """
-    ox, oy = origin
-    px, py = point
-
-    qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
-    qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
-    return qx, qy
 
 
 def raytrace():
@@ -58,6 +44,7 @@ def raytrace():
         except IndexError:
             totalTimeStop = time.time() - totalTime
             print(totalTimeStop)
+            point = Point(0,0)
 
         lightsOnPoint = 0
         #point = Point(random.uniform(0, imageManager.imageWidth),
@@ -66,34 +53,52 @@ def raytrace():
         # pixel color
         pixel = 0
 
+        rays = []
+
+        for i in range(0, 8):
+            pointAtEndOfRay = Point(point.x + IConstants.BASE_VECTOR_RAY, point.y)
+            rotatedPoint = rotate(point, pointAtEndOfRay, math.radians(-45))
+            rays.append(rotatedPoint-point)
+
+
         for source in sources:
 
-            # calculates direction to light source
-
             dir = source.point - point
-            if dir.x == 0 and dir.y == 0:
-                continue
+            rays.append(dir)
 
-            # distance between point and light source
-            length = rt.length(dir)
+            for ray in rays:
 
-            # normalized distance to source
-            length2 = rt.length(rt.normalize(dir))
 
-            free = True
-            for seg in segments:
+                if ray.x == 0 and ray.y == 0:
+                    continue
 
-                # check if ray intersects with segment
-                dist = rt.raySegmentIntersect(point, dir, seg.PointA, seg.PointB)
-                # if intersection, or if intersection is closer than light source
-                if 0 < dist[0] < length2:
-                    free = False
-                    break
+                # distance between point and light source
+                length = rt.length(ray)
 
-            if free:
-                # call imageManager method for color calculation
-                pixel += imageManager.calculatePixelColor(length, point, source)
-                lightsOnPoint += 1
+                # normalized distance to source
+                length2 = rt.length(rt.normalize(ray))
+
+                free = True
+                for seg in segments:
+
+                    # check if ray intersects with segment
+                    dist = rt.raySegmentIntersect(point, ray, seg.a, seg.b)
+                    # if intersection, or if intersection is closer than light source
+                    if 0 < dist[0] < length2:
+                        #Direct ray had intersection
+                        P = seg.a + Point((seg.b - seg.a).x * dist[1], (seg.b - seg.a).y * dist[1])
+                        free = False
+
+                        if seg.ReflectionConditions(point, ray, source, P):
+                            #INTERSECTION TO POINT
+                            pass
+
+                        break
+
+                if free:
+                    # call imageManager method for color calculation
+                    pixel += imageManager.calculatePixelColor(length, point, source)
+                    lightsOnPoint += 1
 
 
         # average pixel value and assign
@@ -182,35 +187,35 @@ light = np.array([1, 1, 0.75])
 segments = [
 
     # Room segments
-    Segment([1, 1, 1], Point(350, 0), Point(350, 180)),
-    Segment([1, 1, 1], Point(350, 239), Point(350, imageManager.imageHeight)),
-    Segment([1, 1, 1], Point(350, 239), Point(358, 239)),
-    Segment([1, 1, 1], Point(358, 239), Point(358, imageManager.imageHeight)),
-    Segment([1, 1, 1], Point(394, 239), Point(394, imageManager.imageHeight)),
-    Segment([1, 1, 1], Point(394, 239), Point(imageManager.imageWidth, 239)),
-    Segment([1, 1, 1], Point(350, 180), Point(409, 180)),
-    Segment([1, 1, 1], Point(409, 171), Point(409, 180)),
-    Segment([1, 1, 1], Point(449, 180), Point(imageManager.imageWidth, 180)),
-    Segment([1, 1, 1], Point(449, 171), Point(449, 180)),
+    NonSpecularSegment([1, 1, 1], Point(350, 0), Point(350, 180)),
+    NonSpecularSegment([1, 1, 1], Point(350, 239), Point(350, imageManager.imageHeight)),
+    NonSpecularSegment([1, 1, 1], Point(350, 239), Point(358, 239)),
+    NonSpecularSegment([1, 1, 1], Point(358, 239), Point(358, imageManager.imageHeight)),
+    NonSpecularSegment([1, 1, 1], Point(394, 239), Point(394, imageManager.imageHeight)),
+    NonSpecularSegment([1, 1, 1], Point(394, 239), Point(imageManager.imageWidth, 239)),
+    NonSpecularSegment([1, 1, 1], Point(350, 180), Point(409, 180)),
+    NonSpecularSegment([1, 1, 1], Point(409, 171), Point(409, 180)),
+    NonSpecularSegment([1, 1, 1], Point(449, 180), Point(imageManager.imageWidth, 180)),
+    NonSpecularSegment([1, 1, 1], Point(449, 171), Point(449, 180)),
 
     # Bathroom walls
-    Segment([1, 1, 1], Point(360, 0), Point(360, 171)),
-    Segment([1, 1, 1], Point(360, 171), Point(409, 171)),
-    Segment([1, 1, 1], Point(449, 171), Point(452, 171)),
-    Segment([1, 1, 1], Point(452, 111), Point(452, 127)),
-    Segment([1, 1, 1], Point(452, 162), Point(452, 171)),
-    Segment([1, 1, 1], Point(452, 127), Point(441, 161)),
-    Segment([1, 1, 1], Point(452, 111), Point(477, 111)),
-    Segment([1, 1, 1], Point(477, 102), Point(477, 111)),
-    Segment([1, 1, 1], Point(477, 102), Point(imageManager.imageWidth, 102)),
+    NonSpecularSegment([1, 1, 1], Point(360, 0), Point(360, 171)),
+    NonSpecularSegment([1, 1, 1], Point(360, 171), Point(409, 171)),
+    NonSpecularSegment([1, 1, 1], Point(449, 171), Point(452, 171)),
+    NonSpecularSegment([1, 1, 1], Point(452, 111), Point(452, 127)),
+    NonSpecularSegment([1, 1, 1], Point(452, 162), Point(452, 171)),
+    NonSpecularSegment([1, 1, 1], Point(452, 127), Point(441, 161)),
+    NonSpecularSegment([1, 1, 1], Point(452, 111), Point(477, 111)),
+    NonSpecularSegment([1, 1, 1], Point(477, 102), Point(477, 111)),
+    NonSpecularSegment([1, 1, 1], Point(477, 102), Point(imageManager.imageWidth, 102)),
 
     # Toilet part
-    Segment([1, 1, 1], Point(452, 127), Point(460, 127)),
-    Segment([1, 1, 1], Point(452, 162), Point(460, 162)),
-    Segment([1, 1, 1], Point(460, 119), Point(460, 127)),
-    Segment([1, 1, 1], Point(460, 162), Point(460, 171)),
-    Segment([1, 1, 1], Point(460, 119), Point(imageManager.imageWidth, 119)),
-    Segment([1, 1, 1],  Point(460, 171), Point(imageManager.imageWidth, 171)),
+    NonSpecularSegment([1, 1, 1], Point(452, 127), Point(460, 127)),
+    NonSpecularSegment([1, 1, 1], Point(452, 162), Point(460, 162)),
+    NonSpecularSegment([1, 1, 1], Point(460, 119), Point(460, 127)),
+    NonSpecularSegment([1, 1, 1], Point(460, 162), Point(460, 171)),
+    NonSpecularSegment([1, 1, 1], Point(460, 119), Point(imageManager.imageWidth, 119)),
+    NonSpecularSegment([1, 1, 1],  Point(460, 171), Point(imageManager.imageWidth, 171)),
 
 
 ]
