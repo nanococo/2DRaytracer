@@ -6,6 +6,8 @@ class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.isLightAtEnd = False
+        self.lightIndex = -1
 
     def __add__(self, other):
         return Point(self.x+other.x, self.y+other.y)
