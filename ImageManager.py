@@ -10,17 +10,20 @@ class ImageManager:
     def __init__(self, pReferencePath):
 
         imageFile = Image.open(pReferencePath)
+        width, height = imageFile.size
         self.referenceImage = np.array(imageFile)
 
-        self.imageHeight = len(self.referenceImage)
-        self.imageWidth = len(self.referenceImage[0])
+        self.imageHeight = height
+        self.imageWidth = width
 
         self.resultImage = np.array(Image.new("RGB", (self.imageHeight,  self.imageWidth), (0, 0, 0)))
         #self.resultImage = np.array(Image.new("RGB", (self.imageHeight,  self.imageWidth), (0, 0, 0)))
 
-    def calculatePixelColor(self, length, point, source, light):
+        self.pixelPointsPool = self.setPixelPointsPool(self.imageHeight, self.imageWidth)
 
-        intensity = (1 - (length / 500)) ** 2
+    def calculatePixelColor(self, length, point, source):
+
+        intensity = (source.intensity - (length / 500)) ** 2
 
         values = (self.referenceImage[int(point.y)][int(point.x)])[:3]
 
@@ -29,5 +32,18 @@ class ImageManager:
 
         return values
 
-    def setPixelColor(self, pPoint, pSources, pColor, lightsOnPoints):
-        self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // lightsOnPoints
+    def setPixelPointsPool(self, pImageHeight, pImageWidth):
+
+        result = []
+        for xCoordinate in range(0, pImageWidth):
+            for yCoordinate in range(0, pImageHeight):
+                result += [[xCoordinate, yCoordinate]]
+
+        return result
+
+    def setPixelColor(self, pPoint, pColor, lightsOnPoints):
+        try:
+            self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // lightsOnPoints
+        except ZeroDivisionError:
+            self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // 1
+

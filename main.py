@@ -10,15 +10,18 @@ import rt
 from ICONSTANTS import IConstants
 from ImageManager import ImageManager
 from Point import *
+from Segment import Segment
 from Source import Source
 import math
 
-imageManager = ImageManager("fondo.png")
+imageManager = ImageManager("fondoB.png")
 sources = [
-           #Source(Point(195, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
-           Source(Point(294, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
-           #Source(Point(94, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth),
-           #Source(Point(394, 200), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth)
+           Source(Point(27, 25), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           Source(Point(204, 25), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           Source(Point(40, 226), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           Source(Point(270, 257), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           Source(Point(417, 88), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           Source(Point(483, 145), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
           ]
 
 
@@ -41,15 +44,24 @@ def raytrace():
     # Raytraces the scene progressively
 
     timerStart = time.time()
+    totalTime = time.time()
     sourceAreasIndex = 0
     nonSourceProbability = IConstants.INITIAL_NON_SOURCE_PROBABILITY
 
     while True:
 
         # random point in the image
-        point = directedRandomPoint(sourceAreasIndex, nonSourceProbability, sources)
-        lightsOnPoint = 1
-        # point = Point(random.uniform(0,500), random.uniform(0,500))
+        try:
+
+            point = directedRandomPoint(sourceAreasIndex, nonSourceProbability, sources)
+
+        except IndexError:
+            totalTimeStop = time.time() - totalTime
+            print(totalTimeStop)
+
+        lightsOnPoint = 0
+        #point = Point(random.uniform(0, imageManager.imageWidth),
+                     # random.uniform(0, imageManager.imageHeight))
 
         # pixel color
         pixel = 0
@@ -68,12 +80,11 @@ def raytrace():
             # normalized distance to source
             length2 = rt.length(rt.normalize(dir))
 
-            #---------------------------------------DIRECT LIGHTING--------------------------------------------
             free = True
             for seg in segments:
 
                 # check if ray intersects with segment
-                dist = rt.raySegmentIntersect(point, dir, seg[0], seg[1])
+                dist = rt.raySegmentIntersect(point, dir, seg.PointA, seg.PointB)
                 # if intersection, or if intersection is closer than light source
                 if 0 < dist[0] < length2:
                     free = False
@@ -81,75 +92,15 @@ def raytrace():
 
             if free:
                 # call imageManager method for color calculation
-                pixel += imageManager.calculatePixelColor(length, point, source, light)
-                lightsOnPoint+=1
-
-            # -------------------------------------INDIRECT LIGHTING--------------------------------------------
-            # (GLOBAL ILLUMINATION PROCESS HERE)
-
-            #FIRST: Add a vector to every 45 degrees from reference point
-                #USES:  Base light ray vector BASE_VECTOR_LENGTH. Rotates from this
-                #       Origin set by reference point
-
-            raysFromPoint = [] # <- Array of vectors (Points) that define directions and range for light rays. Origin is the point
-            origin = (point.x, point.y) #Since point is of type Point, convert its values to a single tuple
-            angle = 0 #Initial value of 45. Increments by 45 each loop
-            for i in range(8):
-                rotatedTuple = rotate(origin, (IConstants.BASE_VECTOR_RAY.x, IConstants.BASE_VECTOR_RAY.y), math.radians(angle)) #Returns a rotated vector by n-degree as tuple
-                raysFromPoint.append(Point(rotatedTuple[0], rotatedTuple[1])) #Created new Point from rotated vector-tuple
-                angle+=45
-
-            #SECOND: Iterate each ray to see if it intersects with a segment. Might intersect with multiple segments since
-            #        it goes in 360 degrees each 45th degree (Star like pattern)
-            #       Each ray will be iterated with all segments present
-
-            for ray in raysFromPoint: #Each ray is a vector represented by a Point
-                for seg in segments:
-
-                    A = seg[0] #Segment point A
-                    B = seg[1] #Segment point B
-                    dist = rt.raySegmentIntersect(point, ray, seg[0], seg[1])
-
-                    if 0 < dist[0] < IConstants.BASE_VECTOR_RAY_LENGTH_NORMALIZED:
-                        #(THIS MEANS BOUNCE SINCE IT INTERSECTS!!!)
-
-                        # THIRD: Calculate intersection point with segment.
-                        P = A + Point((B - A).x * dist[1], (B - A).y * dist[1]) # <- Return a Point type value
-                        firstRayVector = P - point #Defines a vector between the point and the intersection point P
-                        firstLength = rt.length(firstRayVector) #Length of such vector
-
-                        #FOURTH: Calculate direct lighting from new point to source value. If no other
-                        #        Intersection is found, the is a valid indirect lighting
-
-                        #--------------------------------SECOND DIRECT LIGHTING -------------------------------
-                        dir2 = source.point - P #Direction vector between source and new Point P
-
-                        secondLength = rt.length(dir2) #distance between Point P and light source
-                        secondLength2 = rt.length(rt.normalize(dir2)) # normalized distance to source
-
-                        free2 = True
-                        for seg2 in segments:
-
-                            # check if ray intersects with segment
-                            dist2 = rt.raySegmentIntersect(P, dir2, seg2[0], seg2[1])
-                            # if intersection, or if intersection is closer than light source
-                            if 0 < dist2[0] < secondLength2:
-                                free2 = False
-                                break
-
-                        if free2:
-                            # call imageManager method for color calculation
-                            pixel += imageManager.calculatePixelColor(firstLength+secondLength, point, source, light)
-                            lightsOnPoint += 1
-
-                        break
+                pixel += imageManager.calculatePixelColor(length, point, source)
+                lightsOnPoint += 1
 
 
-            # average pixel value and assign
-            imageManager.setPixelColor(point, sources, pixel, lightsOnPoint)
+        # average pixel value and assign
+        imageManager.setPixelColor(point, pixel, lightsOnPoint)
 
         timerEnd = time.time()
-        if (timerEnd - timerStart) > IConstants.SECONDS_BEFORE_CHANGE:
+        if (timerEnd - timerStart) % IConstants.SECONDS_BEFORE_CHANGE:
             timerStart = time.time()
             sourceAreasIndex += 1
             if sourceAreasIndex == sources[0].rangeQuantity:  # prevent the source areas index from going out of range
@@ -159,7 +110,7 @@ def raytrace():
 
 # returns a point elected with a directed random.
 def directedRandomPoint(sourceAreasIndex, nonSourceProbability, sourcesList):
-
+    """
     # Chooses between full random or random between source ranges
     segmentChoice = random.uniform(0, 100)
 
@@ -175,11 +126,29 @@ def directedRandomPoint(sourceAreasIndex, nonSourceProbability, sourcesList):
         # Selects a random index choice between the lists of source ranges
         sourceRangeChoice = random.choice(arange(0, len(sourcesList)))
 
-        # Selects a random X and Y in the chosen source range
-        x = random.choice(sourcesList[sourceRangeChoice].rangeAreas[sourceAreasIndex][0])
-        y = random.choice(sourcesList[sourceRangeChoice].rangeAreas[sourceAreasIndex][1])
+        # Selects a random X and Y in the chosen source range and pops the choice from the list
 
-        return Point(x, y)
+        xChoicePool = sourcesList[sourceRangeChoice].rangeAreas[sourceAreasIndex][0]
+        x = random.choice(xChoicePool)
+        #xIndex = xChoicePool.index(x)
+        #xChoicePool.pop(xIndex)
+
+        yChoicePool = sourcesList[sourceRangeChoice].rangeAreas[sourceAreasIndex][1]
+        y = random.choice(yChoicePool)
+        #yIndex = yChoicePool.index(y)
+        #yChoicePool.pop(yIndex)
+        """
+
+    choices = imageManager.pixelPointsPool
+
+    choiceIndex = random.choice(arange(0, len(choices)))
+
+    x = choices[choiceIndex][0]
+    y = choices[choiceIndex][1]
+
+    choices.pop(choiceIndex)
+
+    return Point(x, y)
 
 
 def getFrame():
@@ -188,10 +157,13 @@ def getFrame():
 
 
 # pygame stuff
-h, w = 550, 550
+h, w = imageManager.imageHeight, imageManager.imageWidth
+
 border = 50
 pygame.init()
+
 screen = pygame.display.set_mode((w + (2 * border), h + (2 * border)))
+
 pygame.display.set_caption("2D Raytracing")
 done = False
 clock = pygame.time.Clock()
@@ -208,15 +180,39 @@ light = np.array([1, 1, 0.75])
 
 # warning, point order affects intersection test!!
 segments = [
-    ([Point(180, 135), Point(215, 135)]),
-    ([Point(285, 135), Point(320, 135)]),
-    ([Point(320, 135), Point(320, 280)]),
-    ([Point(320, 320), Point(320, 355)]),
-    ([Point(320, 355), Point(215, 355)]),
-    ([Point(180, 390), Point(180, 286)]),
-    ([Point(180, 286), Point(140, 286)]),
-    ([Point(320, 320), Point(360, 320)]),
-    ([Point(180, 250), Point(180, 135)]),
+
+    # Room segments
+    Segment([1, 1, 1], Point(350, 0), Point(350, 180)),
+    Segment([1, 1, 1], Point(350, 239), Point(350, imageManager.imageHeight)),
+    Segment([1, 1, 1], Point(350, 239), Point(358, 239)),
+    Segment([1, 1, 1], Point(358, 239), Point(358, imageManager.imageHeight)),
+    Segment([1, 1, 1], Point(394, 239), Point(394, imageManager.imageHeight)),
+    Segment([1, 1, 1], Point(394, 239), Point(imageManager.imageWidth, 239)),
+    Segment([1, 1, 1], Point(350, 180), Point(409, 180)),
+    Segment([1, 1, 1], Point(409, 171), Point(409, 180)),
+    Segment([1, 1, 1], Point(449, 180), Point(imageManager.imageWidth, 180)),
+    Segment([1, 1, 1], Point(449, 171), Point(449, 180)),
+
+    # Bathroom walls
+    Segment([1, 1, 1], Point(360, 0), Point(360, 171)),
+    Segment([1, 1, 1], Point(360, 171), Point(409, 171)),
+    Segment([1, 1, 1], Point(449, 171), Point(452, 171)),
+    Segment([1, 1, 1], Point(452, 111), Point(452, 127)),
+    Segment([1, 1, 1], Point(452, 162), Point(452, 171)),
+    Segment([1, 1, 1], Point(452, 127), Point(441, 161)),
+    Segment([1, 1, 1], Point(452, 111), Point(477, 111)),
+    Segment([1, 1, 1], Point(477, 102), Point(477, 111)),
+    Segment([1, 1, 1], Point(477, 102), Point(imageManager.imageWidth, 102)),
+
+    # Toilet part
+    Segment([1, 1, 1], Point(452, 127), Point(460, 127)),
+    Segment([1, 1, 1], Point(452, 162), Point(460, 162)),
+    Segment([1, 1, 1], Point(460, 119), Point(460, 127)),
+    Segment([1, 1, 1], Point(460, 162), Point(460, 171)),
+    Segment([1, 1, 1], Point(460, 119), Point(imageManager.imageWidth, 119)),
+    Segment([1, 1, 1],  Point(460, 171), Point(imageManager.imageWidth, 171)),
+
+
 ]
 
 # thread setup
