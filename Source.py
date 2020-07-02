@@ -31,8 +31,6 @@ class Source:
 
             sourceRange += IConstants.LIGHT_RANGE_EXPANSION_RATE
 
-
-
     # Sets the random source range, to prevent it from going out of index in expansion.
     def setSourceRange(self, sourcePositionValue, pSourceRange, pUpperLimit):
 
@@ -48,4 +46,4 @@ class Source:
         if rangeEnd > pUpperLimit:
             rangeEnd = pUpperLimit
 
-        return range(rangeBegin, rangeEnd)
+        return range(int(rangeBegin), int(rangeEnd))

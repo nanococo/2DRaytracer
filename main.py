@@ -186,6 +186,8 @@ light = np.array([1, 1, 0.75])
 # warning, point order affects intersection test!!
 segments = [
 
+
+
     # Room segments
     NonSpecularSegment([1, 1, 1], Point(350, 0), Point(350, 180)),
     NonSpecularSegment([1, 1, 1], Point(350, 239), Point(350, imageManager.imageHeight)),

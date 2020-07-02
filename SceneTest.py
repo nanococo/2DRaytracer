@@ -12,16 +12,17 @@ from ICONSTANTS import IConstants
 from ImageManager import ImageManager
 from Point import *
 from Segments.NonSpecularSegment import NonSpecularSegment
+from Segments.SpecularSegment import SpecularSegment
 from Source import Source
 from VectorialMath.Vectors import rotate
 
 imageManager = ImageManager("fondoB.png")
 sources = [
            Source(Point(27, 25), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
-           Source(Point(204, 25), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           #Source(Point(204, 25), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
            Source(Point(40, 226), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
-           Source(Point(270, 257), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
-           Source(Point(417, 88), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           #Source(Point(270, 257), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
+           #Source(Point(417, 88), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
            Source(Point(483, 145), [1, 1, 1], imageManager.imageHeight, imageManager.imageWidth, 1),
           ]
 
@@ -44,7 +45,7 @@ def raytrace():
         except IndexError:
             totalTimeStop = time.time() - totalTime
             print(totalTimeStop)
-            point = Point(0, 0)
+            break
 
         lightsOnPoint = 0
         #point = Point(random.uniform(0, imageManager.imageWidth),
@@ -56,6 +57,7 @@ def raytrace():
         rays = initRays(point, sources)
         for ray in rays:
             pixel += directLight(point, ray) # Pending calculation on lights on point
+
 
         # average pixel value and assign
         imageManager.setPixelColor(point, pixel, lightsOnPoint)
@@ -72,9 +74,9 @@ def raytrace():
 def initRays(point, sources):
     rays = []
     for i in range(0, 8):
-        pointAtEndOfRay = Point(point.x + IConstants.BASE_VECTOR_RAY, point.y)
-        rotatedPoint = rotate(point, pointAtEndOfRay, math.radians(-45))
-        rays.append(rotatedPoint - point)
+        pointAtEndOfRay = Point(point.x + IConstants.BASE_VECTOR_RAY.x, point.y)
+        rotatedPoint = rotate((point.x, point.y), (pointAtEndOfRay.x, pointAtEndOfRay.y), math.radians(-45))
+        rays.append(Point(rotatedPoint[0], rotatedPoint[1]) - point)
     for source in sources:
         dir = source.point - point
         dir.isLightAtEnd = True
@@ -84,18 +86,8 @@ def initRays(point, sources):
 
 def directLight(point, ray):
 
-    """
-    if choca(ray, segment):
-        calcIntersectionPoint()
-        ...Vectors math (para ver si puede rebotar a ese source)...
-        if ReboteValido:
-            rebound()
-    else:
-        imageManager.calculatePixelColor(length, point, source)
-    """
-    #for source in sources:
     if ray.x == 0 and ray.y == 0:
-        return
+        return 0
     # distance between point and light source
     length = rt.length(ray)
     # normalized distance to source
@@ -110,12 +102,13 @@ def directLight(point, ray):
             P = segment.a + Point((segment.b - segment.a).x * dist[1], (segment.b - segment.a).y * dist[1])
             indirectLighting = rebound(point, ray, P, segment)
             if not isinstance(indirectLighting, int):
-                return indirectLighting
+               return indirectLighting
             free = False
 
     if free and ray.isLightAtEnd:
         return imageManager.calculatePixelColor(length, point, sources[ray.lightIndex])
-
+    else:
+        return 0
 
 def rebound(originPoint, ray, intersectionPoint, segment):
     """
@@ -124,18 +117,14 @@ def rebound(originPoint, ray, intersectionPoint, segment):
     :param segment:
     :return: an imageManager.calculatePixelColor if indirect light is reached, 0 otherwise
     """
-
-    """
-    ray = calcula nuevo rayo
-    for seg in segments:
-        if not choca(ray, seg):
-            colorBleeding = calculateColorBleeding(source, segmentColor, newPoint) : returns a Source.
-            imageManager.calculatePixelColor(length between new point and origin point, originPoint, colorBleeding)
-    """
+    #print("Rebound")
     pixel = 0
-    for source in sources:
-        if segment.ReflectionConditions(originPoint, ray, source, intersectionPoint):  # if vectorial conditions are met
-            direction = source.point - intersectionPoint
+
+    for i in range(0, len(sources)):
+        #print(i)
+        if segment.ReflectionConditions(originPoint, ray, sources[i], intersectionPoint):  # if vectorial conditions are met
+            #print("Valid Reflection")
+            direction = sources[i].point - intersectionPoint
             length = rt.length(direction)
             length2 = rt.length(rt.normalize(direction))
             free = True
@@ -145,37 +134,30 @@ def rebound(originPoint, ray, intersectionPoint, segment):
                 distance = rt.raySegmentIntersect(intersectionPoint, direction, seg.a, seg.b)
                 if 0 < distance[0] < length2:
                     free = False
-
             if free:
-                colorBleeding = calculateColorBleeding(source, segment.Color, intersectionPoint)
-                pixel += imageManager.calculatePixelColor(length, originPoint, colorBleeding)
+                colorBleeding = calculateColorBleeding(sources[i], length, segment.Color, intersectionPoint)
+                originLength = rt.length(originPoint)
+                pixel += imageManager.calculatePixelColor(originLength, originPoint, colorBleeding)
+        else:
+            continue
 
     return pixel
 
-
-
-def calculateColorBleeding(pSource, pSegmentColor, pIntersectionPoint):
-    ...
-
-
-
-def intersected(point, intersectionPoint, direction, segment):
-    """
-    :param point:
-    :param direction:
-    :param segment:
-    :return: boolean value. True = intersected, False = not intersected
-    """
-
-
-
-
+def calculateColorBleeding(pSource, pLength, pSegmentColor, pIntersectionPoint):
+    newColor = [(pSource.light[0] + pSegmentColor[0]) // 2,
+                (pSource.light[1] + pSegmentColor[1]) // 2,
+                (pSource.light[2] + pSegmentColor[2]) // 2]
+    intensityDecrementation = random.uniform(0, 5)
+    newIntensity = 0.01
+    #print("Color Bleeding")
+    #print(pIntersectionPoint, newColor, imageManager.imageHeight, imageManager.imageWidth, newIntensity)
+    return Source(pIntersectionPoint, newColor, imageManager.imageHeight, imageManager.imageWidth, newIntensity)
 
 
 
 # returns a point elected with a directed random.
 def directedRandomPoint(sourceAreasIndex, nonSourceProbability, sourcesList):
-    """
+
     # Chooses between full random or random between source ranges
     segmentChoice = random.uniform(0, 100)
 
@@ -202,16 +184,16 @@ def directedRandomPoint(sourceAreasIndex, nonSourceProbability, sourcesList):
         y = random.choice(yChoicePool)
         #yIndex = yChoicePool.index(y)
         #yChoicePool.pop(yIndex)
-        """
 
-    choices = imageManager.pixelPointsPool
 
-    choiceIndex = random.choice(arange(0, len(choices)))
-
-    x = choices[choiceIndex][0]
-    y = choices[choiceIndex][1]
-
-    choices.pop(choiceIndex)
+    # choices = imageManager.pixelPointsPool
+    #
+    # choiceIndex = random.choice(arange(0, len(choices)))
+    #
+    # x = choices[choiceIndex][0]
+    # y = choices[choiceIndex][1]
+    #
+    # choices.pop(choiceIndex)
 
     return Point(x, y)
 
@@ -246,36 +228,47 @@ light = np.array([1, 1, 0.75])
 # warning, point order affects intersection test!!
 segments = [
 
+    SpecularSegment([1, 1, 1], Point(0, 0), Point(imageManager.imageWidth, 0)),
+    SpecularSegment([1, 1, 1], Point(0, 0), Point(0, imageManager.imageHeight)),
+    SpecularSegment([1, 1, 1], Point(0, imageManager.imageHeight), Point(imageManager.imageWidth, imageManager.imageHeight)),
+    SpecularSegment([1, 1, 1], Point(imageManager.imageWidth, 0), Point(imageManager.imageWidth, imageManager.imageHeight)),
+
+    # NonSpecularSegment([1, 1, 1], Point(0, 199), Point(79, 199)),
+    # NonSpecularSegment([1, 1, 1], Point(79, 199), Point(79, imageManager.imageHeight)),
+    #
+    # NonSpecularSegment([1, 1, 1], Point(0, 60), Point(61, 60)),
+    # NonSpecularSegment([1, 1, 1], Point(61, 0), Point(61, 60)),
+
     # Room segments
-    NonSpecularSegment([1, 1, 1], Point(350, 0), Point(350, 180)),
-    NonSpecularSegment([1, 1, 1], Point(350, 239), Point(350, imageManager.imageHeight)),
-    NonSpecularSegment([1, 1, 1], Point(350, 239), Point(358, 239)),
-    NonSpecularSegment([1, 1, 1], Point(358, 239), Point(358, imageManager.imageHeight)),
-    NonSpecularSegment([1, 1, 1], Point(394, 239), Point(394, imageManager.imageHeight)),
-    NonSpecularSegment([1, 1, 1], Point(394, 239), Point(imageManager.imageWidth, 239)),
-    NonSpecularSegment([1, 1, 1], Point(350, 180), Point(409, 180)),
-    NonSpecularSegment([1, 1, 1], Point(409, 171), Point(409, 180)),
-    NonSpecularSegment([1, 1, 1], Point(449, 180), Point(imageManager.imageWidth, 180)),
-    NonSpecularSegment([1, 1, 1], Point(449, 171), Point(449, 180)),
+    SpecularSegment([1, 0, 0], Point(350, 0), Point(350, 180)),
+    SpecularSegment([0, 1, 0], Point(350, 239), Point(350, imageManager.imageHeight)),
+    SpecularSegment([0, 0, 1], Point(350, 239), Point(358, 239)),
+    SpecularSegment([1, 1, 1], Point(358, 239), Point(358, imageManager.imageHeight)),
+    SpecularSegment([1, 1, 1], Point(394, 239), Point(394, imageManager.imageHeight)),
+    SpecularSegment([1, 1, 1], Point(394, 239), Point(imageManager.imageWidth, 239)),
+    SpecularSegment([1, 1, 1], Point(350, 180), Point(409, 180)),
+    SpecularSegment([1, 1, 1], Point(409, 171), Point(409, 180)),
+    SpecularSegment([1, 1, 1], Point(449, 180), Point(imageManager.imageWidth, 180)),
+    SpecularSegment([1, 1, 1], Point(449, 171), Point(449, 180)),
 
     # Bathroom walls
-    NonSpecularSegment([1, 1, 1], Point(360, 0), Point(360, 171)),
-    NonSpecularSegment([1, 1, 1], Point(360, 171), Point(409, 171)),
-    NonSpecularSegment([1, 1, 1], Point(449, 171), Point(452, 171)),
-    NonSpecularSegment([1, 1, 1], Point(452, 111), Point(452, 127)),
-    NonSpecularSegment([1, 1, 1], Point(452, 162), Point(452, 171)),
-    NonSpecularSegment([1, 1, 1], Point(452, 127), Point(441, 161)),
-    NonSpecularSegment([1, 1, 1], Point(452, 111), Point(477, 111)),
-    NonSpecularSegment([1, 1, 1], Point(477, 102), Point(477, 111)),
-    NonSpecularSegment([1, 1, 1], Point(477, 102), Point(imageManager.imageWidth, 102)),
+    SpecularSegment([1, 1, 1], Point(360, 0), Point(360, 171)),
+    SpecularSegment([1, 1, 1], Point(360, 171), Point(409, 171)),
+    SpecularSegment([1, 1, 1], Point(449, 171), Point(452, 171)),
+    SpecularSegment([1, 1, 1], Point(452, 111), Point(452, 127)),
+    SpecularSegment([1, 1, 1], Point(452, 162), Point(452, 171)),
+    SpecularSegment([1, 1, 1], Point(452, 127), Point(441, 161)),
+    SpecularSegment([1, 1, 1], Point(452, 111), Point(477, 111)),
+    SpecularSegment([1, 1, 1], Point(477, 102), Point(477, 111)),
+    SpecularSegment([1, 1, 1], Point(477, 102), Point(imageManager.imageWidth, 102)),
 
     # Toilet part
-    NonSpecularSegment([1, 1, 1], Point(452, 127), Point(460, 127)),
-    NonSpecularSegment([1, 1, 1], Point(452, 162), Point(460, 162)),
-    NonSpecularSegment([1, 1, 1], Point(460, 119), Point(460, 127)),
-    NonSpecularSegment([1, 1, 1], Point(460, 162), Point(460, 171)),
-    NonSpecularSegment([1, 1, 1], Point(460, 119), Point(imageManager.imageWidth, 119)),
-    NonSpecularSegment([1, 1, 1],  Point(460, 171), Point(imageManager.imageWidth, 171)),
+    SpecularSegment([1, 1, 1], Point(452, 127), Point(460, 127)),
+    SpecularSegment([1, 1, 1], Point(452, 162), Point(460, 162)),
+    SpecularSegment([1, 1, 1], Point(460, 119), Point(460, 127)),
+    SpecularSegment([1, 1, 1], Point(460, 162), Point(460, 171)),
+    SpecularSegment([1, 1, 1], Point(460, 119), Point(imageManager.imageWidth, 119)),
+    SpecularSegment([1, 1, 1],  Point(460, 171), Point(imageManager.imageWidth, 171)),
 
 
 ]

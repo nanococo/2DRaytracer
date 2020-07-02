@@ -34,7 +34,7 @@ class NonSpecularSegment(Segment):
             #print(abs(math.degrees(angle)))
 
 
-        lineFromLightToIntersectionPoint = light - P
+        lineFromLightToIntersectionPoint = light.point - P
         dot = normal.dot(lineFromLightToIntersectionPoint)
         det = normal.cross(lineFromLightToIntersectionPoint)
         angleFromLight = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
@@ -42,9 +42,9 @@ class NonSpecularSegment(Segment):
         #print(math.degrees(angleFromLight))
 
         if abs(math.degrees(angleFromLight)) < 90:
-            #print(True)
+            #print(True, "NonSpecular")
             return True
 
         else:
-            #print(False)
+            #print(False, "NonSpecular")
             return False

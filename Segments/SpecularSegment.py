@@ -14,7 +14,7 @@ class SpecularSegment(Segment):
 
         dirFromIntersectionToPoint = origin - P  # This is a vector that goes from origin to intersection point in segment
 
-        print(P)
+        #print(P)
 
         dYdX = getDyDx(self.a, self.b)
         normal = Point(-dYdX.y, dYdX.x)  # First normal vector
@@ -35,7 +35,7 @@ class SpecularSegment(Segment):
 
         if 7 < abs(math.degrees(angle)) < 60:
 
-            lineFromLightToIntersectionPoint = light - P
+            lineFromLightToIntersectionPoint = light.point - P
             dot = normal.dot(lineFromLightToIntersectionPoint)
             det = normal.cross(lineFromLightToIntersectionPoint)
             angleFromLight = math.atan2(det, dot)  # atan2(y, x) or atan2(sin, cos)
@@ -47,11 +47,11 @@ class SpecularSegment(Segment):
                 return True
 
             else:
-                #print(False)
+                #print(False, 1)
                 return False
 
         else:
-            #print(False)
+            #print(False, 2)
             return False
 
 

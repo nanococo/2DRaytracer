@@ -24,7 +24,6 @@ class ImageManager:
     def calculatePixelColor(self, length, point, source):
 
         intensity = (source.intensity - (length / 500)) ** 2
-
         values = (self.referenceImage[int(point.y)][int(point.x)])[:3]
 
         # combine color, light source and light color
@@ -43,7 +42,8 @@ class ImageManager:
 
     def setPixelColor(self, pPoint, pColor, lightsOnPoints):
         try:
-            self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // lightsOnPoints
+            #print(pColor)
+            self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // 4
         except ZeroDivisionError:
             self.resultImage[int(pPoint.x)][int(pPoint.y)] = pColor // 1
 
